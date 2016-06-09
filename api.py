@@ -12,6 +12,16 @@ def index():
   resp = Response(response=json.dumps(retval), status=200, mimetype="application/json")
   return resp
 
+@app.route("/api/v1/")
+def base():
+
+  retval = {}
+  retval['status'] = "ok"
+  retval['msg'] = "This should link to epandda documentation page / inform user they've hit the base endpoint"
+
+  resp = Response(response=json.dumps(retval), status=200, mimetype="application/json")
+  return resp
+
 @app.route("/api/v1/occurrence", methods=['GET'])
 def occurrence():
 
