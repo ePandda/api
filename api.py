@@ -31,6 +31,11 @@ def occurrence():
   taxon_name = request.args.get('taxon_name')
   taxon_auth = request.args.get('taxon_auth')
 
+  # optional
+  locality         = request.args.get('locality')
+  period           = request.args.get('period')
+  institution_code = request.args.get('institution_code')
+
   if taxon_name and taxon_auth:
 
     retval['status'] = "ok"
@@ -54,7 +59,17 @@ def publication():
 
   # required
   scientific_name = request.args.get('scientific_name')
-  if scientific_name:
+  taxon_auth      = request.args.get('taxon_auth')
+
+  # optional
+  order      = request.args.get('order')
+  journal    = request.args.get('journal')
+  article    = request.args.get('article')
+  author     = request.args.get('author')
+  state_prov = request.args.get('state_province')
+  locality   = request.args.get('locality')
+
+  if scientific_name and taxon_auth:
 
     retval['status'] = "ok"
     retval['matches'] = []
@@ -62,7 +77,7 @@ def publication():
     resp = Response(response=json.dumps(retval), status=200, mimetype="application/json")
   else:
     retval['status'] = "err"
-    retval['msg'] = "Scientific Name is a required field"
+    retval['msg'] = "Scientific Name and Taxon Authority are required fields"
     retval['matches'] = []
 
     resp = Response(response=json.dumps(retval), status=422, mimetype="application/json")
@@ -74,9 +89,13 @@ def fossilModern():
 
   retval = {}
 
-  #required
+  # required
   scientific_name = request.args.get('scientific_name')
   taxon_auth      = request.args.get('taxon_auth')
+
+  # optional
+  locality = request.args.get('locality')
+  period   = request.args.get('period')
 
   if scientific_name and taxon_auth:
 
@@ -101,6 +120,9 @@ def stratigraphy():
   # required
   strat_layer = request.args.get('strat_layer')
   strat_auth  = request.args.get('strat_auth')
+
+  # optional
+  # TODO: Determine optional fields of interest for stratigraphic queries
 
   if strat_layer and strat_auth:
 
