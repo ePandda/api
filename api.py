@@ -1,26 +1,35 @@
 import json
+import requests
+import collections
+from pymongo import MongoClient
 from flask import Flask, request, Response
 app = Flask(__name__)
+
+config = json.load(open('./config.json'))
+
+#mongoDB Setup
+client = MongoClient(config['mongo_url'])
+db = client.test
 
 @app.route("/")
 def index():
 
-  retval = {}
-  retval['status'] = "ok"
-  retval['v1'] = "http://epandda.whirl-i-gig.com/api/v1/"
+  resp = (("status", "ok"),
+          ("v1", "http://epandda.whirl-i-gig.com/api/v1/"))
+  resp = collections.OrderedDict(resp)
 
-  resp = Response(response=json.dumps(retval), status=200, mimetype="application/json")
-  return resp
+  return Response(response=json.dumps(resp), status=200, mimetype="application/json")
+  
 
 @app.route("/api/v1/")
 def base():
 
-  retval = {}
-  retval['status'] = "ok"
-  retval['msg'] = "This should link to epandda documentation page / inform user they've hit the base endpoint"
+  resp = (("status", "ok"),
+          ("msg", "this should link to epandda documentation page / inform user they've hit the base endpoint"))
 
-  resp = Response(response=json.dumps(retval), status=200, mimetype="application/json")
-  return resp
+  resp = collections.OrderedDict(resp)
+
+  return Response(response=json.dumps(resp), status=200, mimetype="application/json")
 
 @app.route("/api/v1/occurrence", methods=['GET'])
 def occurrence():
@@ -38,24 +47,26 @@ def occurrence():
 
   if taxon_name and taxon_auth:
 
-    retval['status'] = "ok"
-    retval['matches'] = []
+    resp = (("status", "okay"),
+            ("matches", []))
+    resp = collections.OrderedDict(resp)
 
-    resp = Response(response=json.dumps(retval), status=200, mimetype="application/json")
+    return Response(response=json.dumps(resp), status=200, mimetype="application/json")
   else:
   
-    retval['status'] = "err"
-    retval['msg'] = "Taxon Name and Taxon Authority are required fields"
+    resp = (("status", "err"),
+            ("msg", "Taxon Name and Taxon Authority are required fields"))
 
-    resp = Response(response=json.dumps(retval), status=422, mimetype="application/json")
+    resp = collections.OrderedDict(resp)
 
-  return resp
+    return Response(response=json.dumps(resp), status=422, mimetype="application/json")
+
 
 
 @app.route("/api/v1/publication", methods=['GET'])
 def publication():
 
-  retval = {}
+  print "Publication Handler"
 
   # required
   scientific_name = request.args.get('scientific_name')
@@ -71,24 +82,62 @@ def publication():
 
   if scientific_name and taxon_auth:
 
-    retval['status'] = "ok"
-    retval['matches'] = []
+    # required parms met, check what optional terms we have?
 
-    resp = Response(response=json.dumps(retval), status=200, mimetype="application/json")
+    # assume genus species if scientific_name has a space, otherwise it's higher up the tree? 
+
+    print "Sci Name: " + scientific_name
+
+    # Get iDigBio Records
+    idigbio = requests.get('https://search.idigbio.org/v2/search/records/?rq={"scientificname":"' + scientific_name + '"}')
+    if 200 == idigbio.status_code:
+      idigbio_json = json.loads( idigbio.content )
+
+      #print idigbio_json
+
+    # check if scientific_name exists in classification path:
+    matches_by_class = []
+    class_match = db.pbdb_refs.find({'classification_path': { '$regex': scientific_name }})
+    for cm in class_match:
+
+      print "looking up coll info for PID: " + cm['pid']
+      # Lookup collection information
+      coll_info = []
+      coll_data = db.pbdb_colls.find({'reference_no': cm['pid']})
+      for cd in coll_data:
+        print "found coll data match: "
+        #print cd
+
+        coll_info.append({"collection_no": cd['collection_no'], 
+                          "paleolng": cd['paleolng'], 
+                          "paleolat": cd['paleolat'], 
+                          "collectors": cd['collectors'], 
+                          "collection_name": cd['collection_name'],
+                          "formation": cd['formation'],
+                          "lat": cd['lat'], 
+                          "lng": cd['lng'], 
+                          "state": cd['state']})
+
+      matches_by_class.append({"pid": cm['pid'], "title": cm['title'], "pubtitle": cm['pubtitle'], "author": cm['author1'], "coll_info": coll_info})
+    
+    resp = (("status", "ok"),
+            ("query_term", scientific_name),
+            ("taxon_authority", taxon_auth),
+            ("pbdb_matches", matches_by_class),
+            ("idigbio_matches", idigbio_json['items']))
+
+    resp = collections.OrderedDict(resp)
+    return Response(response=json.dumps(resp), status=200, mimetype="application/json")
   else:
-    retval['status'] = "err"
-    retval['msg'] = "Scientific Name and Taxon Authority are required fields"
-    retval['matches'] = []
 
-    resp = Response(response=json.dumps(retval), status=422, mimetype="application/json")
+    resp = (("status", "err"),
+            ("msg", "Scientific Name and Taxon Authority are required fields"))
 
-  return resp
+    resp = collections.OrderedDict(resp)
+    return Response(response=json.dumps(resp), status=422, mimetype="application/json")
 
 @app.route("/api/v1/fossilmodern", methods=['GET'])
 def fossilModern():
-
-  retval = {}
-
   # required
   scientific_name = request.args.get('scientific_name')
   taxon_auth      = request.args.get('taxon_auth')
@@ -99,23 +148,21 @@ def fossilModern():
 
   if scientific_name and taxon_auth:
 
-    retval['status'] = "ok"
-    retval['matches'] = []
+    resp = (("status", "ok"),
+            ("matches", []))
 
-    resp = Response(response=json.dumps(retval), status=200, mimetype="application/json")
+    resp = collections.OrderedDict(resp)
+    return Response(response=json.dumps(resp), status=200, mimetype="application/json")
   else:
 
-    retval['status'] = "err"
-    retval['msg'] = "Scientific Name and Taxon Authority are required fields"
+    resp = (("status", "err"),
+            ("msg", "Scientific Name and Taxon Authority are required fields"))
 
-    resp = Response(response=json.dumps(retval), status=422, mimetype="application/json")
-
-  return resp
+    resp = collections.OrderedDict(resp)
+    return Response(response=json.dumps(resp), status=422, mimetype="application/json")
 
 @app.route("/api/v1/stratigraphy", methods=['GET'])
 def stratigraphy():
-
-  retval = {}
 
   # required
   strat_layer = request.args.get('strat_layer')
@@ -126,28 +173,28 @@ def stratigraphy():
 
   if strat_layer and strat_auth:
 
-    retval['status'] = "ok"
-    retval['matches'] = []
+    resp = (("status", "ok"),
+            ("matches", []))
+   
+    resp = collections.OrderedDict(resp)
+    return Response(response=json.dumps(resp), status=200, mimetype="application/json")
 
-    resp = Response(response=json.dumps(retval), status=200, mimetype="application/json")
   else:
 
-    retval['status'] = "err"
-    retval['msg'] = "Stratigraphic Layer and Stratigraphic Authority are required fields"
+    resp = (("status", "err"),
+            ("msg", "Stratigraphic Layer and Stratigraphic Authority are required fields"))
 
-    resp = Response(response=json.dumps(retval), status=422, mimetype="application/json")
-
-  return resp
+    resp = collections.OrderedDict(resp)
+    return Response(response=json.dumps(resp), status=422, mimetype="application/json")
 
 @app.errorhandler(404)
 def page_not_found(e):
   
-  retval = {}
-  retval['status'] = "error"
-  retval['msg'] = "The request could not be completed"
+  resp = (("status", "err"),
+          ("msg", "The request could not be completed"))
 
-  resp = Response(response=json.dumps(retval), status=404, mimetype="application/json")
-  return resp
+  resp = collections.OrderedDict(resp)
+  return Response(response=json.dumps(resp), status=404, mimetype="application/json")
 
 if __name__ == '__main__':
     app.run()
