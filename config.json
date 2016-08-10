@@ -1,0 +1,5 @@
+{
+  "bhl_base": "http://www.biodiversitylibrary.org/api2/httpquery.ashx",
+  "bhl_key": "5415e6dc-c430-4de8-8346-6d6091d08edb",
+  "mongo_url": "mongodb://localhost:27017"
+}

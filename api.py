@@ -1,6 +1,7 @@
 import json
 import requests
 import collections
+import pubmatching
 from pymongo import MongoClient
 from flask import Flask, request, Response
 app = Flask(__name__)
@@ -93,36 +94,53 @@ def publication():
     if 200 == idigbio.status_code:
       idigbio_json = json.loads( idigbio.content )
 
-      #print idigbio_json
-
     # check if scientific_name exists in classification path:
     matches_by_class = []
     class_match = db.pbdb_refs.find({'classification_path': { '$regex': scientific_name }})
+    
     for cm in class_match:
 
-      print "looking up coll info for PID: " + cm['pid']
       # Lookup collection information
       coll_info = []
       coll_data = db.pbdb_colls.find({'reference_no': cm['pid']})
       for cd in coll_data:
-        print "found coll data match: "
-        #print cd
 
         coll_info.append({"collection_no": cd['collection_no'], 
                           "paleolng": cd['paleolng'], 
                           "paleolat": cd['paleolat'], 
                           "collectors": cd['collectors'], 
                           "collection_name": cd['collection_name'],
+                          "collection_aka": cd['collection_aka'],
                           "formation": cd['formation'],
+                          "member": cd['member'],
                           "lat": cd['lat'], 
                           "lng": cd['lng'], 
-                          "state": cd['state']})
+                          "state": cd['state'],
+                          "country": cd['country']})
 
-      matches_by_class.append({"pid": cm['pid'], "title": cm['title'], "pubtitle": cm['pubtitle'], "author": cm['author1'], "coll_info": coll_info})
+      matches_by_class.append({"pid": cm['pid'], 
+                               "title": cm['title'], 
+                               "pubtitle": cm['pubtitle'], 
+                               "author": cm['author1'], 
+                               "classification_path": cm['classification_path'],
+                               "states": cm['states'],
+                               "doi": cm['doi'],
+                               "coll_info": coll_info})
     
+
+    # TODO: Append to matches by class if PID not present
+    additional = db.pbdb_refs.find({'title': { '$regex': scientific_name}})
+    for add in additional:
+      print add
+
+
+    # Send off matches_by_class and idigbio_json['items'] for term matching
+    matches = pubmatching.matchPubFields(matches_by_class, idigbio_json['items'])
+
     resp = (("status", "ok"),
             ("query_term", scientific_name),
             ("taxon_authority", taxon_auth),
+            ("matches", matches),
             ("pbdb_matches", matches_by_class),
             ("idigbio_matches", idigbio_json['items']))
 
