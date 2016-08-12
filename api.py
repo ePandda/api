@@ -79,24 +79,40 @@ def publication():
   article    = request.args.get('article')
   author     = request.args.get('author')
   state_prov = request.args.get('state_province')
+  county     = request.args.get('county')
   locality   = request.args.get('locality')
 
   if scientific_name and taxon_auth:
 
-    # required parms met, check what optional terms we have?
+    # TODO: Revisit IDB python module - it didn't return results correctly // I abandonded for a reason I don't remember now.
+
+    # required params met, check what optional terms we have?
+
+    # TODO: conditional for when to use order / when sci_name
+    sciname_param = '"scientificname": "' + scientific_name + '"'
+    sciname_param = '"order": "' + scientific_name + '"'
+
+    stateprov = ""
+    if state_prov is not None and len(state_prov) > 0:
+      stateprov = ', "stateprovince": "' + str(state_prov) + '"'
+
+    countyparam = ""
+    if county is not None and len(county) > 0:
+      countyparam = ', "county": "' + str(county) + '"'
 
     # assume genus species if scientific_name has a space, otherwise it's higher up the tree? 
 
     print "Sci Name: " + scientific_name
+    print "URL: " + config['idigbio_base'] + '{' + sciname_param + stateprov + countyparam + '}&limit=250'
 
     # Get iDigBio Records
-    idigbio = requests.get('https://search.idigbio.org/v2/search/records/?rq={"scientificname":"' + scientific_name + '"}')
+    idigbio = requests.get(config['idigbio_base'] + '{' + sciname_param + stateprov + countyparam + '}&limit=250')
     if 200 == idigbio.status_code:
       idigbio_json = json.loads( idigbio.content )
 
     # check if scientific_name exists in classification path:
     matches_by_class = []
-    class_match = db.pbdb_refs.find({'classification_path': { '$regex': scientific_name }})
+    class_match = db.pbdb_refs.find({ '$and': [{'classification_path': { '$regex': scientific_name }}, { 'states': { '$eq': state_prov}}] })
     
     for cm in class_match:
 
@@ -129,9 +145,9 @@ def publication():
     
 
     # TODO: Append to matches by class if PID not present
-    additional = db.pbdb_refs.find({'title': { '$regex': scientific_name}})
-    for add in additional:
-      print add
+    #additional = db.pbdb_refs.find({'title': { '$regex': scientific_name}})
+    #for add in additional:
+    #  print add
 
 
     # Send off matches_by_class and idigbio_json['items'] for term matching
