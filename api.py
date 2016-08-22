@@ -112,8 +112,11 @@ def publication():
 
     # check if scientific_name exists in classification path:
     matches_by_class = []
-    class_match = db.pbdb_refs.find({ '$and': [{'classification_path': { '$regex': scientific_name }}, { 'states': { '$eq': state_prov}}] })
-    
+    if state_prov is not None:
+      class_match = db.pbdb_refs.find({ '$and': [{'classification_path': { '$regex': scientific_name }}, { 'states': { '$eq': state_prov}}] })
+    else:
+      class_match = db.pbdb_refs.find({'classification_path': { '$regex': scientific_name }})    
+
     for cm in class_match:
 
       # Lookup collection information
