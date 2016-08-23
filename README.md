@@ -10,7 +10,7 @@ various axes
 - iDigPaleo
 
 ## API Base URL:
-<br/> `http://epandda.whirl-i-gig.com/api/v1/`
+`http://epandda.whirl-i-gig.com/api/v1/`
 
 
 ## Bibliographic Reference and Associated Specimens
@@ -19,21 +19,21 @@ Where possible Biological Heritage Library's OCR Text API has been used to scan 
 All results are scored based on composite field matching to determine confidence in a given specimen's association to the literature.
 
 * #### URL
-  <br/> `http://epandda.whirl-i-gig.com/api/v1/publication`
+  `http://epandda.whirl-i-gig.com/api/v1/publication`
 
 * #### Method
-  <br/> `GET`
+  `GET`
 
 * #### Params
 
   ##### Required
-  <br/> `scientific_name | taxon_auth`
+  `scientific_name | taxon_auth`
 
   ##### Optional
-  <br/> `state_prov | locality`
+  `state_prov | locality`
 
 * #### Sample Call:
-  <br/> `ex: http://epandda.whirl-i-gig.com/api/v1/publication?scientific_name=coleoptera&taxon_auth=gbif`
+  `ex: http://epandda.whirl-i-gig.com/api/v1/publication?scientific_name=coleoptera&taxon_auth=gbif`
 
 
 ## Return Object
