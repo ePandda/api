@@ -6,7 +6,7 @@ from pymongo import MongoClient
 from flask import Flask, request, Response
 app = Flask(__name__)
 
-config = json.load(open('./config.json'))
+config = json.load(open('../epandda/api/config.json'))
 
 #mongoDB Setup
 client = MongoClient(config['mongo_url'])
