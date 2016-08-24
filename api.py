@@ -64,7 +64,39 @@ def occurrence():
     if institution_code is not None and len(institution_code) > 0:
       inst_param = ', "instution_code": "' + str(institution_code) + '"'
     
+    # split sciname into genus and species if it contains a space
+    if " " in sciname_param:
+      sciname_array = sciname_param.split(" ")
+      genus_param = sciname_array[0]
+      species_param = sciname_array[1]
 
+    # Required params met, check what optional terms we have
+    loc = ""
+    if locality is not None and len(locality) > 0:
+      loc = ', "locality": "' + str(locality) + '"'
+
+    period_param = ""
+    if period is not None and len(period) > 0:
+      period_param = ', "period": "' + str(period) + '"'
+
+    inst_param = ""
+    if institution_code is not None and len(institution_code) > 0:
+      inst_param = ', "instution_code": "' + str(institution_code) + '"'
+
+    print "Sci Name: " + scientific_name
+    print "URL: " + config['idigbio_base'] + '{' + sciname_param + loc + period_param + inst_param + '}&limit=250'
+
+    # Get iDigBio Records
+    idigbio = requests.get(config['idigbio_base'] + '{' + sciname_param + loc + period_param + inst_param + '}&limit=250')
+    if 200 == idigbio.status_code:
+      idigbio_json = json.loads( idigbio.content )
+
+    # Get pbdb occurrence fields
+    matches_on_occ = []
+    if species_param is not None:
+      occ_match = db.pbdb_occurrences.find({ '$or': [{'genus_name': genus_param}, {'species_name': species_param}]})
+    else:
+      occ_match = db.pbdb_refs.find({'genus_name': genus_param})
 
     resp = (("status", "okay"),
             ("matches", []))
