@@ -48,6 +48,24 @@ def occurrence():
 
   if taxon_name and taxon_auth:
 
+
+    sciname_param = '"scientificname": "' + taxon_name + '"'
+    
+    # Required params met, check what optional terms we have
+    loc = ""
+    if locality is not None and len(locality) > 0:
+      loc = ', "locality": "' + str(locality) + '"'
+
+    period_param = ""
+    if period is not None and len(period) > 0:
+      period_param = ', "period": "' + str(period) + '"'
+
+    inst_param = ""
+    if institution_code is not None and len(institution_code) > 0:
+      inst_param = ', "instution_code": "' + str(institution_code) + '"'
+    
+
+
     resp = (("status", "okay"),
             ("matches", []))
     resp = collections.OrderedDict(resp)
