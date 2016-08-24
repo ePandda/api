@@ -36,6 +36,28 @@ All results are scored based on composite field matching to determine confidence
   `ex: http://epandda.whirl-i-gig.com/api/v1/publication?scientific_name=coleoptera&taxon_auth=gbif`
 
 
+## Taxonomic Occurrences
+iDigBio and iDigPaleo specimen records and associated occurrence data are matched to entered taxonomic occurrences in Paleo Biology Database.
+Utilization of the Global Names Resolution API will allow for selection of individual authorities.
+
+* #### URL
+  `http://epandda.whirl-i-gig.com/api/v1/occurrence`
+
+* #### Method
+  `GET`
+
+* #### Params
+
+  ##### Required
+  `taxon_name | taxon_auth`
+
+  ##### Optional
+  `locality | period | institution_code`
+
+* #### Sample Call:
+  `ex: http://epandda.whirl-i-gig.com/api/v1/occurrence?taxon_name=canis&taxon_auth=gbif`
+
+
 ## Return Object
 ePANDDA will return a compact data object with persistent identifiers to original records to allow for data inflation
 

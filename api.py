@@ -221,15 +221,45 @@ def stratigraphy():
 
   # required
   strat_layer = request.args.get('strat_layer')
-  strat_auth  = request.args.get('strat_auth')
+  #strat_auth  = request.args.get('strat_auth')
 
   # optional
   # TODO: Determine optional fields of interest for stratigraphic queries
 
-  if strat_layer and strat_auth:
+  #if strat_layer and strat_auth:
+  if strat_layer:
+
+    strat_param = '"earliestperiodorlowestsystem":"' + strat_layer + '","latestperiodorhighestsystem":"' + strat_layer + '"'        
+    pb_results = []
+    pb_colls = db.pbdb_colls.find({ "$or": [{"period_max": {"$regex": r'^' + strat_layer, "$options": 'i' }}, {"period_min": {"$regex": r'^' + strat_layer, "$options": 'i'}} ] })
+
+    print pb_colls
+    for coll in pb_colls:
+      pb_results.append({
+        "paleolng": coll['paleolng'],
+        "paleolat": coll['paleolat'],
+        "period_min": coll['period_min'],
+        "period_max": coll['period_max'],
+        "collectors": coll['collectors'],
+        "collection_no": coll['collection_no'],
+        "country": coll['country'],
+        "state": coll['state'],
+        "member": coll['member'],
+        "formation": coll['formation'],
+        "lat": coll['lat'],
+        "lng": coll['lng'],
+        "collection_name": coll['collection_name']
+      })
+
+    idigbio = requests.get(config['idigbio_base'] + '{' + strat_param + '}&limit=250')
+    if 200 == idigbio.status_code:
+        idigbio_json = json.loads(idigbio.content)
 
     resp = (("status", "ok"),
-            ("matches", []))
+            ("query_term", strat_layer),
+            ("matches", []),
+            ("pbdb_matches", pb_results),
+            ("idigbio_matches", idigbio_json['items']))
    
     resp = collections.OrderedDict(resp)
     return Response(response=json.dumps(resp), status=200, mimetype="application/json")
