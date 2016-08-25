@@ -51,6 +51,12 @@ def occurrence():
 
     sciname_param = '"scientificname": "' + taxon_name + '"'
     
+    # split sciname into genus and species if it contains a space
+    if " " in sciname_param:
+      sciname_array = sciname_param.split(" ")
+      genus_param = sciname_array[0]
+      species_param = sciname_array[1]
+
     # Required params met, check what optional terms we have
     loc = ""
     if locality is not None and len(locality) > 0:
@@ -63,11 +69,33 @@ def occurrence():
     inst_param = ""
     if institution_code is not None and len(institution_code) > 0:
       inst_param = ', "instution_code": "' + str(institution_code) + '"'
-    
 
+    print "Sci Name: " + scientific_name
+    print "URL: " + config['idigbio_base'] + '{' + sciname_param + loc + period_param + inst_param + '}&limit=250'
+
+    # Get iDigBio Records
+    idigbio = requests.get(config['idigbio_base'] + '{' + sciname_param + loc + period_param + inst_param + '}&limit=250')
+    if 200 == idigbio.status_code:
+      idigbio_json = json.loads( idigbio.content )
+
+    # Get pbdb occurrence fields
+    matches_on_occ = []
+    if species_param is not None:
+      occ_match = db.pbdb_occurrences.find({ '$or': [{'genus_name': genus_param}, {'species_name': species_param}]})
+    else:
+      occ_match = db.pbdb_refs.find({'genus_name': genus_param})
+    for om in occ_match:
+      matches_on_occ.append({"occ_no": om['occurrence_no'],
+			     "genus_name": om['genus_name'],
+			     "species_name": om['species_name'],
+			     "comments": om['comments'],
+			     "abund_units": om['abund_units'],
+			     "abund_value": om['abund_value']})
 
     resp = (("status", "okay"),
-            ("matches", []))
+            ("matches", []),
+	    ("pbdb_occ", matches_on_occ),
+	    ("idigbio_occ", idigbio_json['items']))
     resp = collections.OrderedDict(resp)
 
     return Response(response=json.dumps(resp), status=200, mimetype="application/json")
