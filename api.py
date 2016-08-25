@@ -123,6 +123,8 @@ def occurrence():
         "abund_value": om['abund_value'],
         "coll_data": matches_on_coll})
 
+    matches = occ_matching.occurrenceMatch(matches_on_occ, idigbio_json['items'])
+
     resp = (("status", "okay"),
             ("matches", []),
 	        ("pbdb_occ", matches_on_occ),
