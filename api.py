@@ -96,15 +96,32 @@ def occurrence():
 
     for om in occ_match:
 
+      matches_on_coll = []
+      coll_match = db.pbdb_colls.find({'collection_no': om['collection_no']})
+
+      for cm in coll_match:
+        matches_on_coll.append({
+         "collection_name": cm['collection_name'],
+         "collection_no": cm['collection_no'],
+         "country": cm['country'],
+         "state": cm['state'],
+         "county": cm['county'],
+         "formation": cm['formation'],
+         "member": cm['member'],
+         "lat": cm['lat'],
+         "lng": cm['lng'],
+         "period_max": cm['period_max']})
+
       matches_on_occ.append({
         "occ_no": om['occurrence_no'],
         "coll_no": om['collection_no'],
         "ref_no": om['reference_no'],
         "genus_name": om['genus_name'],
-	  	"species_name": om['species_name'],
-	    "comments": om['comments'],
-	    "abund_unit": om['abund_unit'],
-        "abund_value": om['abund_value']})
+	"species_name": om['species_name'],
+	"comments": om['comments'],
+	"abund_unit": om['abund_unit'],
+        "abund_value": om['abund_value'],
+        "coll_data": matches_on_coll})
 
     resp = (("status", "okay"),
             ("matches", []),
