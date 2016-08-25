@@ -1,4 +1,4 @@
-cript for matching on occurrence data
+# Script for matching on occurrence data
 # initially matching on:
 # lat/lng
 # county
