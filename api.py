@@ -101,16 +101,16 @@ def occurrence():
 
       for cm in coll_match:
         matches_on_coll.append({
-         "collection_name": cm['collection_name'],
-         "collection_no": cm['collection_no'],
-         "country": cm['country'],
-         "state": cm['state'],
-         "county": cm['county'],
-         "formation": cm['formation'],
-         "member": cm['member'],
-         "lat": cm['lat'],
-         "lng": cm['lng'],
-         "period_max": cm['period_max']})
+          "collection_name": cm['collection_name'],
+          "collection_no": cm['collection_no'],
+          "country": cm['country'],
+          "state": cm['state'],
+          "county": cm['county'],
+          "formation": cm['formation'],
+          "member": cm['member'],
+          "lat": cm['lat'],
+          "lng": cm['lng'],
+          "period_max": cm['period_max']})
 
       matches_on_occ.append({
         "occ_no": om['occurrence_no'],
@@ -126,9 +126,9 @@ def occurrence():
     # matches = occ_matching.occurrenceMatch(matches_on_occ, idigbio_json['items'])
 
     resp = (("status", "okay"),
-            ("matches", []),
-	        ("pbdb_occ", matches_on_occ),
-	        ("idigbio_occ", idigbio_json['items']))
+            ("matches", matches),
+            ("pbdb_occ", matches_on_occ),
+            ("idigbio_occ", idigbio_json['items']))
     resp = collections.OrderedDict(resp)
 
     return Response(response=json.dumps(resp), status=200, mimetype="application/json")
