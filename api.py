@@ -6,7 +6,7 @@ from pymongo import MongoClient
 from flask import Flask, request, Response
 app = Flask(__name__)
 
-config = json.load(open('../epandda/api/config.json'))
+config = json.load(open('./config.json'))
 
 #mongoDB Setup
 client = MongoClient(config['mongo_url'])
@@ -48,14 +48,19 @@ def occurrence():
 
   if taxon_name and taxon_auth:
 
-
     sciname_param = '"scientificname": "' + taxon_name + '"'
-    
+
+    # TODO: this needs more thought, what if order, kingdom, phylum is entered?
     # split sciname into genus and species if it contains a space
-    if " " in sciname_param:
-      sciname_array = sciname_param.split(" ")
-      genus_param = sciname_array[0]
+    genus_param   = ""
+    species_param = ""
+    if " " in taxon_name:
+      sciname_array = taxon_name.split(" ")
+      genus_param   = sciname_array[0]
       species_param = sciname_array[1]
+
+    print "genus: " + genus_param
+    print "species: " + species_param
 
     # Required params met, check what optional terms we have
     loc = ""
@@ -68,34 +73,43 @@ def occurrence():
 
     inst_param = ""
     if institution_code is not None and len(institution_code) > 0:
-      inst_param = ', "instution_code": "' + str(institution_code) + '"'
+      inst_param = ', "institution_code": "' + str(institution_code) + '"'
 
-    print "Sci Name: " + scientific_name
+    print "Sci Name: " + taxon_name
     print "URL: " + config['idigbio_base'] + '{' + sciname_param + loc + period_param + inst_param + '}&limit=250'
 
     # Get iDigBio Records
-    idigbio = requests.get(config['idigbio_base'] + '{' + sciname_param + loc + period_param + inst_param + '}&limit=250')
+    idigbio = requests.get(config['idigbio_base'] + '{' + sciname_param + '}&limit=250')
     if 200 == idigbio.status_code:
       idigbio_json = json.loads( idigbio.content )
 
     # Get pbdb occurrence fields
     matches_on_occ = []
-    if species_param is not None:
-      occ_match = db.pbdb_occurrences.find({ '$or': [{'genus_name': genus_param}, {'species_name': species_param}]})
-    else:
-      occ_match = db.pbdb_refs.find({'genus_name': genus_param})
+    #if species_param is not None:
+    #  occ_match = db.pbdb_occurrences.find({ '$or': [{'genus_name': genus_param}, {'species_name': species_param}]})
+    #else:
+    #  occ_match = db.pbdb_refs.find({'genus_name': genus_param})
+
+    occ_match = db.pbdb_occurrences.find({ '$or': [{ 'genus_name': { '$regex': taxon_name, '$options': 'i' }},
+                                                   { 'species_name': { '$regex': taxon_name, '$options': 'i'}}]})
+
+
     for om in occ_match:
-      matches_on_occ.append({"occ_no": om['occurrence_no'],
-			     "genus_name": om['genus_name'],
-			     "species_name": om['species_name'],
-			     "comments": om['comments'],
-			     "abund_units": om['abund_units'],
-			     "abund_value": om['abund_value']})
+
+      matches_on_occ.append({
+        "occ_no": om['occurrence_no'],
+        "coll_no": om['collection_no'],
+        "ref_no": om['reference_no'],
+        "genus_name": om['genus_name'],
+	  	"species_name": om['species_name'],
+	    "comments": om['comments'],
+	    "abund_unit": om['abund_unit'],
+        "abund_value": om['abund_value']})
 
     resp = (("status", "okay"),
             ("matches", []),
-	    ("pbdb_occ", matches_on_occ),
-	    ("idigbio_occ", idigbio_json['items']))
+	        ("pbdb_occ", matches_on_occ),
+	        ("idigbio_occ", idigbio_json['items']))
     resp = collections.OrderedDict(resp)
 
     return Response(response=json.dumps(resp), status=200, mimetype="application/json")
@@ -170,27 +184,29 @@ def publication():
       coll_data = db.pbdb_colls.find({'reference_no': cm['pid']})
       for cd in coll_data:
 
-        coll_info.append({"collection_no": cd['collection_no'], 
-                          "paleolng": cd['paleolng'], 
-                          "paleolat": cd['paleolat'], 
-                          "collectors": cd['collectors'], 
-                          "collection_name": cd['collection_name'],
-                          "collection_aka": cd['collection_aka'],
-                          "formation": cd['formation'],
-                          "member": cd['member'],
-                          "lat": cd['lat'], 
-                          "lng": cd['lng'], 
-                          "state": cd['state'],
-                          "country": cd['country']})
+        coll_info.append({
+          "collection_no": cd['collection_no'], 
+          "paleolng": cd['paleolng'], 
+          "paleolat": cd['paleolat'], 
+          "collectors": cd['collectors'], 
+          "collection_name": cd['collection_name'],
+          "collection_aka": cd['collection_aka'],
+          "formation": cd['formation'],
+          "member": cd['member'],
+          "lat": cd['lat'], 
+          "lng": cd['lng'], 
+          "state": cd['state'],
+          "country": cd['country']})
 
-      matches_by_class.append({"pid": cm['pid'], 
-                               "title": cm['title'], 
-                               "pubtitle": cm['pubtitle'], 
-                               "author": cm['author1'], 
-                               "classification_path": cm['classification_path'],
-                               "states": cm['states'],
-                               "doi": cm['doi'],
-                               "coll_info": coll_info})
+      matches_by_class.append({
+          "pid": cm['pid'], 
+          "title": cm['title'], 
+          "pubtitle": cm['pubtitle'], 
+          "author": cm['author1'], 
+          "classification_path": cm['classification_path'],
+          "states": cm['states'],
+          "doi": cm['doi'],
+          "coll_info": coll_info})
     
 
     # TODO: Append to matches by class if PID not present
