@@ -2,6 +2,7 @@ import json
 import requests
 import collections
 import pubmatching
+import stratmatching
 from pymongo import MongoClient
 from flask import Flask, request, Response
 app = Flask(__name__)
@@ -265,20 +266,51 @@ def stratigraphy():
 
   # required
   strat_layer = request.args.get('strat_layer')
+  taxon_name  = request.args.get('taxon_name')
   #strat_auth  = request.args.get('strat_auth')
 
   # optional
-  # TODO: Determine optional fields of interest for stratigraphic queries
+  state_prov = request.args.get('state_province')
+  county     = request.args.get('county')
+  locality   = request.args.get('locality')
 
   #if strat_layer and strat_auth:
-  if strat_layer:
+  if strat_layer and taxon_name:
 
     strat_param = '"earliestperiodorlowestsystem":"' + strat_layer + '","latestperiodorhighestsystem":"' + strat_layer + '"'        
+    taxon_param = ', "scientificname": "' + taxon_name + '"'
+
+    stateprov = ""
+    if state_prov is not None and len(state_prov) > 0:
+      stateprov = ', "stateprovince": "' + str(state_prov) + '"'
+
+    countyparam = ""
+    if county is not None and len(county) > 0:
+      countyparam = ', "county": "' + str(county) + '"'
+
+
     pb_results = []
-    pb_colls = db.pbdb_colls.find({ "$or": [{"period_max": {"$regex": r'^' + strat_layer, "$options": 'i' }}, {"period_min": {"$regex": r'^' + strat_layer, "$options": 'i'}} ] })
+    pb_colls = db.pbdb_colls.find({ "$or": [{"period_max": {"$regex": r'^' + strat_layer, "$options": 'i' }}, {"period_min": {"$regex": r'^' + strat_layer, "$options": 'i'}} ] }).limit(100)
 
     print pb_colls
     for coll in pb_colls:
+
+      coll_occs = []
+      pb_occs = db.pbdb_occurrences.find({ "collection_no": coll['collection_no']}).limit(10)
+      for oc in pb_occs:
+    
+        occs = []
+        occs.append({
+          "occurrence_no": oc['occurrence_no'],
+          "reference_no": oc['reference_no'],
+          "genus": oc['genus_name'],
+          "species": oc['species_name'],
+          "comments": oc['comments'],
+          "abundance": oc['abund_value'] + ' ' + oc['abund_unit']
+        })
+
+        # TODO: Pull in References for classification lookup?
+
       pb_results.append({
         "paleolng": coll['paleolng'],
         "paleolat": coll['paleolat'],
@@ -292,12 +324,16 @@ def stratigraphy():
         "formation": coll['formation'],
         "lat": coll['lat'],
         "lng": coll['lng'],
-        "collection_name": coll['collection_name']
+        "collection_name": coll['collection_name'],
+        "occurrences": occs 
       })
 
-    idigbio = requests.get(config['idigbio_base'] + '{' + strat_param + '}&limit=250')
+    idigbio = requests.get(config['idigbio_base'] + '{' + strat_param + taxon_param + '}&limit=250')
     if 200 == idigbio.status_code:
         idigbio_json = json.loads(idigbio.content)
+
+    # Send of to be matched:w
+    matches = stratmatching.match(idigbio_json['items'], pb_results) 
 
     resp = (("status", "ok"),
             ("query_term", strat_layer),
