@@ -110,20 +110,21 @@ def occurrence():
           "member": cm['member'],
           "lat": cm['lat'],
           "lng": cm['lng'],
-          "period_max": cm['period_max']})
+          "period_max": cm['period_max'],
+          "period_min": cm['period_min']})
 
       matches_on_occ.append({
         "occ_no": om['occurrence_no'],
         "coll_no": om['collection_no'],
         "ref_no": om['reference_no'],
         "genus_name": om['genus_name'],
-	"species_name": om['species_name'],
-	"comments": om['comments'],
-	"abund_unit": om['abund_unit'],
+		"species_name": om['species_name'],
+		"comments": om['comments'],
+		"abund_unit": om['abund_unit'],
         "abund_value": om['abund_value'],
         "coll_data": matches_on_coll})
 
-    # matches = occ_matching.occurrenceMatch(matches_on_occ, idigbio_json['items'])
+    matches = occ_matching.occurrenceMatch(matches_on_occ, idigbio_json['items'])
 
     resp = (("status", "okay"),
             ("matches", matches),
@@ -140,7 +141,6 @@ def occurrence():
     resp = collections.OrderedDict(resp)
 
     return Response(response=json.dumps(resp), status=422, mimetype="application/json")
-
 
 
 @app.route("/api/v1/publication", methods=['GET'])
