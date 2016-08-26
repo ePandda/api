@@ -97,20 +97,40 @@ def occurrence():
 
     for om in occ_match:
 
+      matches_on_coll = []
+      coll_match = db.pbdb_colls.find({'collection_no': om['collection_no']})
+
+      for cm in coll_match:
+        matches_on_coll.append({
+          "collection_name": cm['collection_name'],
+          "collection_no": cm['collection_no'],
+          "country": cm['country'],
+          "state": cm['state'],
+          "county": cm['county'],
+          "formation": cm['formation'],
+          "member": cm['member'],
+          "lat": cm['lat'],
+          "lng": cm['lng'],
+          "period_max": cm['period_max'],
+          "period_min": cm['period_min']})
+
       matches_on_occ.append({
         "occ_no": om['occurrence_no'],
         "coll_no": om['collection_no'],
         "ref_no": om['reference_no'],
         "genus_name": om['genus_name'],
-	  	"species_name": om['species_name'],
-	    "comments": om['comments'],
-	    "abund_unit": om['abund_unit'],
-        "abund_value": om['abund_value']})
+		"species_name": om['species_name'],
+		"comments": om['comments'],
+		"abund_unit": om['abund_unit'],
+        "abund_value": om['abund_value'],
+        "coll_data": matches_on_coll})
+
+    matches = occ_matching.occurrenceMatch(matches_on_occ, idigbio_json['items'])
 
     resp = (("status", "okay"),
-            ("matches", []),
-	        ("pbdb_occ", matches_on_occ),
-	        ("idigbio_occ", idigbio_json['items']))
+            ("matches", matches),
+            ("pbdb_occ", matches_on_occ),
+            ("idigbio_occ", idigbio_json['items']))
     resp = collections.OrderedDict(resp)
 
     return Response(response=json.dumps(resp), status=200, mimetype="application/json")
@@ -122,7 +142,6 @@ def occurrence():
     resp = collections.OrderedDict(resp)
 
     return Response(response=json.dumps(resp), status=422, mimetype="application/json")
-
 
 
 @app.route("/api/v1/publication", methods=['GET'])
