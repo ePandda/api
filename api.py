@@ -2,6 +2,7 @@ import json
 import requests
 import collections
 import pubmatching
+import occ_matching
 from pymongo import MongoClient
 from flask import Flask, request, Response
 app = Flask(__name__)
