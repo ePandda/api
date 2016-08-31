@@ -29,6 +29,7 @@ def match(idigbio, pbdb):
       pb['genus_names'] = []
       pb['species_names'] = []
 
+      # flatten out occurrences
       if 'occurrences' in pb:
         for occ in pb['occurrences']:
       
@@ -38,7 +39,6 @@ def match(idigbio, pbdb):
           if occ['species'].lower() not in pb['genus_names'] and occ['species'] is not "":
             pb['species_names'].append( occ['species'].lower() )
 
-      print "condense occurrence data done .. "
 
       if "dwc:formation" in specimen['data']:
 
@@ -94,6 +94,7 @@ def match(idigbio, pbdb):
       if score > 1:
         matches.append({"pbdb_id": pb['collection_no'], "idig_id": specimen['uuid'], "score": score, "matched_on": '[%s]' % ', '.join(map(str, matched_on)) })
 
+  print str(len(matches)) + " matches returned"
   # Sort matches by descending score  
   sorted_matches = sorted(matches, key=lambda match: match['score'], reverse=True)
   return sorted_matches

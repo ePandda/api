@@ -308,55 +308,77 @@ def stratigraphy():
       countyparam = ', "county": "' + str(county) + '"'
 
 
+    # Get classification path to pull relevant pbdb records.
+
+    print "we looked for: " + taxon_name
+
     pb_results = []
-    pb_colls = db.pbdb_colls.find({ "$or": [{"period_max": {"$regex": r'^' + strat_layer, "$options": 'i' }}, {"period_min": {"$regex": r'^' + strat_layer, "$options": 'i'}} ] }).limit(100)
+    lookup_results = db.pbdb_taxon_lookup.find({ "classification_path": { "$regex": taxon_name, "$options": 'i' }}).limit(10)
 
-    print pb_colls
-    for coll in pb_colls:
+    print "after look through coll_by_taxon"
 
-      coll_occs = []
-      pb_occs = db.pbdb_occurrences.find({ "collection_no": coll['collection_no']}).limit(10)
-      for oc in pb_occs:
+    for lp in lookup_results:
+
+      print lp
+      for coll_no in lp['coll_no']:
+
+        print "checking for collections for: " + coll_no
+        coll_by_taxon = db.pbdb_colls.find({ "$and": [
+         {"collection_no": coll_no},
+         {"$or":[
+           {"period_max": {"$regex": strat_layer,"$options":'i'}},
+           {"period_min": {"$regex": strat_layer,"$options":'i'}}
+         ]}
+        ]})
+
+
+        for coll in coll_by_taxon:
+
+          coll_occs = []
+          pb_occs = db.pbdb_occurrences.find({ "collection_no": coll['collection_no']}).limit(10)
+          for oc in pb_occs:
     
-        occs = []
-        occs.append({
-          "occurrence_no": oc['occurrence_no'],
-          "reference_no": oc['reference_no'],
-          "genus": oc['genus_name'],
-          "species": oc['species_name'],
-          "comments": oc['comments'],
-          "abundance": oc['abund_value'] + ' ' + oc['abund_unit']
-        })
+           occs = []
+           occs.append({
+             "occurrence_no": oc['occurrence_no'],
+             "reference_no": oc['reference_no'],
+             "genus": oc['genus_name'],
+             "species": oc['species_name'],
+             "comments": oc['comments'],
+             "abundance": oc['abund_value'] + ' ' + oc['abund_unit']
+           })
 
-        # TODO: Pull in References for classification lookup?
+          # TODO: Pull in References for classification lookup?
 
-      pb_results.append({
-        "paleolng": coll['paleolng'],
-        "paleolat": coll['paleolat'],
-        "period_min": coll['period_min'],
-        "period_max": coll['period_max'],
-        "collectors": coll['collectors'],
-        "collection_no": coll['collection_no'],
-        "country": coll['country'],
-        "state": coll['state'],
-        "member": coll['member'],
-        "formation": coll['formation'],
-        "lat": coll['lat'],
-        "lng": coll['lng'],
-        "collection_name": coll['collection_name'],
-        "occurrences": occs 
-      })
+          pb_results.append({
+           "paleolng": coll['paleolng'],
+           "paleolat": coll['paleolat'],
+           "period_min": coll['period_min'],
+           "period_max": coll['period_max'],
+           "collectors": coll['collectors'],
+           "collection_no": coll['collection_no'],
+           "country": coll['country'],
+           "state": coll['state'],
+           "member": coll['member'],
+           "formation": coll['formation'],
+           "lat": coll['lat'],
+           "lng": coll['lng'],
+           "collection_name": coll['collection_name'],
+           "occurrences": occs 
+          })
+
+    print "Now get idigbio results"
 
     idigbio = requests.get(config['idigbio_base'] + '{' + strat_param + taxon_param + '}&limit=250')
     if 200 == idigbio.status_code:
         idigbio_json = json.loads(idigbio.content)
 
-    # Send of to be matched:w
+    # Send of to be matched
     matches = stratmatching.match(idigbio_json['items'], pb_results) 
 
     resp = (("status", "ok"),
             ("query_term", strat_layer),
-            ("matches", []),
+            ("matches", matches),
             ("pbdb_matches", pb_results),
             ("idigbio_matches", idigbio_json['items']))
    
