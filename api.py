@@ -4,6 +4,7 @@ import collections
 import pubmatching
 import stratmatching
 import occ_matching
+import taxon_lookup
 from pymongo import MongoClient
 from flask import Flask, request, Response
 app = Flask(__name__)
@@ -148,8 +149,6 @@ def occurrence():
 @app.route("/api/v1/publication", methods=['GET'])
 def publication():
 
-  print "Publication Handler"
-
   # required
   scientific_name = request.args.get('scientific_name')
   taxon_auth      = request.args.get('taxon_auth')
@@ -168,8 +167,6 @@ def publication():
     # TODO: Revisit IDB python module - it didn't return results correctly // I abandonded for a reason I don't remember now.
 
     # required params met, check what optional terms we have?
-
-    # TODO: conditional for when to use order / when sci_name
     sciname_param = '"scientificname": "' + scientific_name + '"'
     sciname_param = '"order": "' + scientific_name + '"'
 
@@ -181,6 +178,7 @@ def publication():
     if county is not None and len(county) > 0:
       countyparam = ', "county": "' + str(county) + '"'
 
+    # Think about this part more ....
     # assume genus species if scientific_name has a space, otherwise it's higher up the tree? 
 
     print "Sci Name: " + scientific_name
@@ -191,60 +189,23 @@ def publication():
     if 200 == idigbio.status_code:
       idigbio_json = json.loads( idigbio.content )
 
-    # check if scientific_name exists in classification path:
-    matches_by_class = []
-    if state_prov is not None:
-      class_match = db.pbdb_refs.find({ '$and': [{'classification_path': { '$regex': scientific_name }}, { 'states': { '$eq': state_prov}}] })
-    else:
-      class_match = db.pbdb_refs.find({'classification_path': { '$regex': scientific_name }})    
-
-    for cm in class_match:
-
-      # Lookup collection information
-      coll_info = []
-      coll_data = db.pbdb_colls.find({'reference_no': cm['pid']})
-      for cd in coll_data:
-
-        coll_info.append({
-          "collection_no": cd['collection_no'], 
-          "paleolng": cd['paleolng'], 
-          "paleolat": cd['paleolat'], 
-          "collectors": cd['collectors'], 
-          "collection_name": cd['collection_name'],
-          "collection_aka": cd['collection_aka'],
-          "formation": cd['formation'],
-          "member": cd['member'],
-          "lat": cd['lat'], 
-          "lng": cd['lng'], 
-          "state": cd['state'],
-          "country": cd['country']})
-
-      matches_by_class.append({
-          "pid": cm['pid'], 
-          "title": cm['title'], 
-          "pubtitle": cm['pubtitle'], 
-          "author": cm['author1'], 
-          "classification_path": cm['classification_path'],
-          "states": cm['states'],
-          "doi": cm['doi'],
-          "coll_info": coll_info})
-    
-
-    # TODO: Append to matches by class if PID not present
-    #additional = db.pbdb_refs.find({'title': { '$regex': scientific_name}})
-    #for add in additional:
-    #  print add
-
+    # taxon_lookup
+    pbdb_items = taxon_lookup.lookupBySciName( scientific_name, state_prov )
 
     # Send off matches_by_class and idigbio_json['items'] for term matching
-    matches = pubmatching.matchPubFields(matches_by_class, idigbio_json['items'])
+    matches = pubmatching.matchPubFields(pbdb_items, idigbio_json['items'])
 
+    print "gutcheck matches .. "
+    print "match count: " + str(len(matches))
+
+    # TODO: Shrink return object, or figure out how to send massive amount of data back?
     resp = (("status", "ok"),
             ("query_term", scientific_name),
             ("taxon_authority", taxon_auth),
-            ("matches", matches),
-            ("pbdb_matches", matches_by_class),
-            ("idigbio_matches", idigbio_json['items']))
+            ("matches", matches))
+            # TOOO MUCH DATA -- THESE KILL SERVER AND SEND 500
+            #("pbdb_matches", pbdb_items), 
+            #("idigbio_matches", idigbio_json['items']))
 
     resp = collections.OrderedDict(resp)
     return Response(response=json.dumps(resp), status=200, mimetype="application/json")
