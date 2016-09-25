@@ -1,4 +1,5 @@
 # any imports we need
+import annotation
 #
 # lev distance
 # utls for normalized strings
@@ -251,25 +252,19 @@ def matchPubFields(pbdb, idigbio):
 
             score = score + 1
             matched_on.append("PBDB:localities == dwc:locality")
-
-      print "... scoring?"
       
       if score > 2:
-        print "Adding to matches ....."
-        print "pbdb id: " + pb['ref']['pid']
-        print "specimen id: " + specimen['uuid']
-        print "score: " + str(score)
+
+        # Create openAnnotation
+        oa = annotation.create(specimen, pb)
         matches.append({
           "pbdb_id": pb['ref']['pid'], 
           "idig_id": specimen['uuid'], 
           "score": score, 
+          "open_annotation": oa,
           "matched_on": '[%s]' % ', '.join(map(str, matched_on)) 
         })
-  print " sorted matches are returning ..."
   # Sort matches by descending score  
   sorted_matches = sorted(matches, key=lambda match: match['score'], reverse=True)
-  print "... really sorted returning"
-
-  print sorted_matches
 
   return sorted_matches

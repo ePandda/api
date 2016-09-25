@@ -22,12 +22,6 @@ def lookupBySciName(sciname, state_prov):
                                                        {'states': { '$regex': state_prov, '$options': 'i'}}]})
   for tm in sciname_lookup:
 
-
-    print "tm result.... "
-    print tm
-
-    print "Checking for reference for ref_no: " + tm['ref_no']
-
     # get references
     pb_ref = db.pbdb_refs.find({'pid': tm['ref_no']})
 
@@ -60,6 +54,64 @@ def lookupBySciName(sciname, state_prov):
 
   return inflated
 
+def lookupByStratLayer( sciname, state_prov, strat_layer ):
+  print "in lookupByStratLayer"
+  print "Searching for a " + str(sciname) + " in " + str(state_prov) + " from the " + str(strat_layer)
+  
+  inflated = []
+  sciname_lookup = db.pbdb_taxon_lookup.find({'$and': [{'classification_path': { '$regex': sciname, '$options': 'i'}},
+                                                       {'states': { '$regex': state_prov, '$options': 'i'}}]})
+
+  lookup_count = sciname_lookup.count()
+
+  print "Lookup returned: " + str(lookup_count) + " results"
+
+  print "taxon_lookup finished"
+  for item in sciname_lookup:
+
+    strat_colls = []
+    for coll_no in item['coll_no']:
+      coll_by_taxon = db.pbdb_colls.find({"$and": [
+        {"collection_no": coll_no},
+        {"$or": [
+          {"period_max": {"$regex": strat_layer, "$options":'i'}},
+          {"period_min": {"$regex": strat_layer, "$options":'i'}}
+        ]}
+      ]})
+
+      for coll in coll_by_taxon:
+        strat_colls.append({
+          "paleolng": coll['paleolng'],
+          "period_min": coll['period_min'],
+          "paleolat": coll['paleolat'],
+          "collectors": coll['collectors'],
+          "collection_aka": coll['collection_aka'],
+          "collection_no": coll['collection_no'],
+          "country": coll['country'],
+          "reference_no": coll['reference_no'],
+          "county": coll['county'],
+          "state": coll['state'],
+          "memeber": coll['member'],
+          "formation": coll['formation'],
+          "collection_name": coll['collection_name'],
+          "lat": coll['lat'],
+          "lng": coll['lng'],
+          "period_max": coll['period_max']
+        })
+
+    inflated.append({"strat_colls": strat_colls, 
+                       "taxon_item": {
+                         "classification_path": item['classification_path'],
+                         "coll_no": item['coll_no'],
+                         "occ_no": item['occ_no'],
+                         "ref_no": item['ref_no'],
+                         "genus": item['genus'],
+                         "species": item['species'],
+                         "states": item['states']
+                       }
+    })
+
+  return inflated
 
 def lookupByRefNo(ref_no):
 

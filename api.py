@@ -8,7 +8,7 @@ import taxon_lookup
 from pymongo import MongoClient
 from flask import Flask, request, Response
 app = Flask(__name__)
-
+app.debug = True
 config = json.load(open('./config.json'))
 
 #mongoDB Setup
@@ -168,7 +168,7 @@ def publication():
 
     # required params met, check what optional terms we have?
     sciname_param = '"scientificname": "' + scientific_name + '"'
-    sciname_param = '"order": "' + scientific_name + '"'
+    #sciname_param = '"order": "' + scientific_name + '"'
 
     stateprov = ""
     if state_prov is not None and len(state_prov) > 0:
@@ -274,75 +274,27 @@ def stratigraphy():
 
     print "we looked for: " + taxon_name
 
-    pb_results = []
-    lookup_results = db.pbdb_taxon_lookup.find({ "classification_path": { "$regex": taxon_name, "$options": 'i' }}).limit(10)
-
-    print "after look through coll_by_taxon"
-
-    for lp in lookup_results:
-
-      print lp
-      for coll_no in lp['coll_no']:
-
-        print "checking for collections for: " + coll_no
-        coll_by_taxon = db.pbdb_colls.find({ "$and": [
-         {"collection_no": coll_no},
-         {"$or":[
-           {"period_max": {"$regex": strat_layer,"$options":'i'}},
-           {"period_min": {"$regex": strat_layer,"$options":'i'}}
-         ]}
-        ]})
-
-
-        for coll in coll_by_taxon:
-
-          coll_occs = []
-          pb_occs = db.pbdb_occurrences.find({ "collection_no": coll['collection_no']}).limit(10)
-          for oc in pb_occs:
-    
-           occs = []
-           occs.append({
-             "occurrence_no": oc['occurrence_no'],
-             "reference_no": oc['reference_no'],
-             "genus": oc['genus_name'],
-             "species": oc['species_name'],
-             "comments": oc['comments'],
-             "abundance": oc['abund_value'] + ' ' + oc['abund_unit']
-           })
-
-          # TODO: Pull in References for classification lookup?
-
-          pb_results.append({
-           "paleolng": coll['paleolng'],
-           "paleolat": coll['paleolat'],
-           "period_min": coll['period_min'],
-           "period_max": coll['period_max'],
-           "collectors": coll['collectors'],
-           "collection_no": coll['collection_no'],
-           "country": coll['country'],
-           "state": coll['state'],
-           "member": coll['member'],
-           "formation": coll['formation'],
-           "lat": coll['lat'],
-           "lng": coll['lng'],
-           "collection_name": coll['collection_name'],
-           "occurrences": occs 
-          })
-
-    print "Now get idigbio results"
-
-    idigbio = requests.get(config['idigbio_base'] + '{' + strat_param + taxon_param + '}&limit=250')
+    idigbio_items = []
+    idigbio = requests.get(config['idigbio_base'] + '{' + strat_param + taxon_param + stateprov + '}&limit=250')
     if 200 == idigbio.status_code:
         idigbio_json = json.loads(idigbio.content)
 
-    # Send of to be matched
-    matches = stratmatching.match(idigbio_json['items'], pb_results) 
+        if 'items' in idigbio_json:
+          idigbio_items = idigbio_json['items']
+
+    pb_results = []
+    pb_results = taxon_lookup.lookupByStratLayer( taxon_name, state_prov, strat_layer )
+
+    matches = []
+    if idigbio_items and pb_results:
+      # Send of to be matched
+      matches = stratmatching.match(idigbio_items, pb_results) 
 
     resp = (("status", "ok"),
             ("query_term", strat_layer),
             ("matches", matches),
             ("pbdb_matches", pb_results),
-            ("idigbio_matches", idigbio_json['items']))
+            ("idigbio_matches", idigbio_items))
    
     resp = collections.OrderedDict(resp)
     return Response(response=json.dumps(resp), status=200, mimetype="application/json")
