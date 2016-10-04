@@ -3,7 +3,6 @@ import requests
 import collections
 import pubmatching
 import stratmatching
-import hackmatching
 import occ_matching
 import taxon_lookup
 from pymongo import MongoClient
