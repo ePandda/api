@@ -3,6 +3,7 @@ import requests
 import collections
 import pubmatching
 import stratmatching
+import hackmatching
 import occ_matching
 import taxon_lookup
 from pymongo import MongoClient
@@ -287,6 +288,7 @@ def stratigraphy():
     if idigbio_items and pb_results:
       # Send of to be matched
       matches = stratmatching.match(idigbio_items, pb_results) 
+      #matches = hackmatching.match(idigbio_items, pb_results)
 
     pbdb_return = []
     for pb in pb_results:

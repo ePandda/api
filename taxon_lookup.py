@@ -13,40 +13,30 @@ db = client.test
 def lookupBySciName(sciname, state_prov):
 
   print "in lookup BySciName"
-  print "searching for " + sciname
-
-  print "located in " + state_prov
+  print "searching for " + sciname + "located in " + state_prov
 
   inflated = []
   sciname_lookup = db.pbdb_taxon_lookup.find({'$and': [{'classification_path': { '$regex': sciname, '$options': 'i'}},
-                                                       {'states': { '$regex': state_prov, '$options': 'i'}}]})
+                                                       {'states': { '$regex': state_prov, '$options': 'i'}}]}, {'_id': 0})
   for tm in sciname_lookup:
 
-    # get references
-    pb_ref = db.pbdb_refs.find({'pid': tm['ref_no']})
-
+    # inflate references
     ref_result = {}
-    print "ref search returned .... "
+    pb_ref = db.pbdb_refs.find({'pid': tm['ref_no']}, {'_id': 0})
     for ref in pb_ref:
       ref_result = ref
 
-
-    print "Ref Result: "
-    print ref_result
-
+    # inflate collections
     ref_colls = []
     for cn in tm['coll_no']:
-      print "checking collections for coll_no: " + cn
-      pb_colls = db.pbdb_colls.find({'collection_no': cn })
+      pb_colls = db.pbdb_colls.find({'collection_no': cn }, {'_id': 0})
       for pc in pb_colls:
-        print "adding pc to list"
-        print pc
         ref_colls.append(pc)
 
+    # inflate occurrences
     ref_occs = []
     for on in tm['occ_no']:
-      print "checking occurrences for occ_no: " + on
-      pb_occs = db.pbdb_occs.find({'occurrence_no': on })
+      pb_occs = db.pbdb_occs.find({'occurrence_no': on }, {'_id': 0})
       for po in pb_occs:
         ref_occs.append(po)
 
@@ -62,16 +52,16 @@ def lookupByFormation( sciname, state_prov, formation ):
   if state_prov:
     state_prov = state_prov.lower()
     sciname_lookup = db.pbdb_taxon_lookup.find({'$and': [{'classification_path': { '$regex': sciname, '$options': 'i'}},
-                                                         {'states': { '$regex': state_prov, '$options': 'i'}}]})
+                                                         {'states': { '$regex': state_prov, '$options': 'i'}}]}, {'_id': 0})
 
   else:
-    sciname_lookup = db.pbdb_taxon_lookup.find({'classification_path': { '$regex': sciname, '$options': 'i'}})
+    sciname_lookup = db.pbdb_taxon_lookup.find({'classification_path': { '$regex': sciname, '$options': 'i'}}, {'_id': 0})
 
   lookup_count = sciname_lookup.count()
 
   print "Lookup returned: " + str(lookup_count) + " results"
-
   print "taxon_lookup finished"
+
   for item in sciname_lookup:
 
     if "states" not in item:
@@ -82,67 +72,18 @@ def lookupByFormation( sciname, state_prov, formation ):
       coll_by_taxon = db.pbdb_colls.find({"$and": [
         {"collection_no": coll_no},
         {"formation": formation}
-      ]})
+      ]}, {'_id': 0})
 
       for coll in coll_by_taxon:
 
-        print item['ref_no'] + "coll object"
-        print coll
-
         if state_prov is not None:
           if coll['state'].lower() == state_prov:
-
-            strat_colls.append({
-              "paleolng": coll['paleolng'],
-              "period_min": coll['period_min'],
-              "paleolat": coll['paleolat'],
-              "collectors": coll['collectors'],
-              "collection_aka": coll['collection_aka'],
-              "collection_no": coll['collection_no'],
-              "country": coll['country'],
-              "reference_no": coll['reference_no'],
-              "county": coll['county'],
-              "state": coll['state'],
-              "memeber": coll['member'],
-              "formation": coll['formation'],
-              "collection_name": coll['collection_name'],
-              "lat": coll['lat'],
-              "lng": coll['lng'],
-              "period_max": coll['period_max']
-            })
-
+            strat_colls.append(coll)
         else:
+          strat_colls.append(coll)
+          
 
-          strat_colls.append({
-            "paleolng": coll['paleolng'],
-            "period_min": coll['period_min'],
-            "paleolat": coll['paleolat'],
-            "collectors": coll['collectors'],
-            "collection_aka": coll['collection_aka'],
-            "collection_no": coll['collection_no'],
-            "country": coll['country'],
-            "reference_no": coll['reference_no'],
-            "county": coll['county'],
-            "state": coll['state'],
-            "memeber": coll['member'],
-            "formation": coll['formation'],
-            "collection_name": coll['collection_name'],
-            "lat": coll['lat'],
-            "lng": coll['lng'],
-            "period_max": coll['period_max']
-          })
-
-    inflated.append({"strat_colls": strat_colls, 
-                       "taxon_item": {
-                         "classification_path": item['classification_path'],
-                         "coll_no": item['coll_no'],
-                         "occ_no": item['occ_no'],
-                         "ref_no": item['ref_no'],
-                         "genus": item['genus'],
-                         "species": item['species'],
-                         "states": item['states']
-                       }
-    })
+    inflated.append({"strat_colls": strat_colls, "taxon_item": item})
 
   return inflated
 
