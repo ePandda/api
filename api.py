@@ -150,8 +150,14 @@ def occurrence():
 def publication():
 
   # required
+
+  # scientific_name == genus species
   scientific_name = request.args.get('scientific_name')
-  taxon_auth      = request.args.get('taxon_auth')
+  order           = request.args.get('order')
+  kingdom         = request.args.get('kingdom')
+  phylum          = request.args.get('phylum')
+
+  #taxon_auth      = request.args.get('taxon_auth')
 
   # optional
   order      = request.args.get('order')
@@ -162,13 +168,28 @@ def publication():
   county     = request.args.get('county')
   locality   = request.args.get('locality')
 
-  if scientific_name and taxon_auth:
+  # if scientific_name and taxon_auth:
+  if scientific_name or order or kingdom or phylum:
 
     # TODO: Revisit IDB python module - it didn't return results correctly // I abandonded for a reason I don't remember now.
 
     # required params met, check what optional terms we have?
-    sciname_param = '"scientificname": "' + scientific_name + '"'
-    #sciname_param = '"order": "' + scientific_name + '"'
+    sciname_param = ""
+
+    if scientific_name is not None and len(scientific_name) > 0:
+      sciname_param = '"scientificname": "' + scientific_name + '"'
+
+    if order is not None and len(order) > 0:
+      scientific_name = order
+      sciname_param = '"order": "' + order + '"'
+
+    if kingdom is not None and len(kingdom) > 0:
+      scientific_name = kingdom
+      sciname_param = '"kingdom": "' + kingdom + '"'
+
+    if phylum is not None and len(phylum) > 0:
+      scientific_name = phylum
+      sciname_param = '"phylum": "' + phylum + '"'
 
     stateprov = ""
     if state_prov is not None and len(state_prov) > 0:
@@ -195,17 +216,14 @@ def publication():
     # Send off matches_by_class and idigbio_json['items'] for term matching
     matches = pubmatching.matchPubFields(pbdb_items, idigbio_json['items'])
 
-    print "gutcheck matches .. "
-    print "match count: " + str(len(matches))
-
+    # after matching ditch some stuff we don't need to display
     for pb in pbdb_items:
       del pb['classification_path']
       del pb['ref']['classification_path']
 
-    # TODO: Shrink return object, or figure out how to send massive amount of data back?
     resp = (("status", "ok"),
             ("query_term", scientific_name),
-            ("taxon_authority", taxon_auth),
+            #("taxon_authority", taxon_auth),
             ("matches", matches),
             ("pbdb_matches", pbdb_items), 
             ("idigbio_matches", idigbio_json['items']))

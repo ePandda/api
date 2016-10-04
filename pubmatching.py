@@ -74,7 +74,6 @@ def matchPubFields(pbdb, idigbio):
         # Check if Author, Collector name matches
 
         if specimen['data']['dwc:scientificNameAuthorship'].lower().find( pb['ref']['author1'].lower() ) >= 0:
-          print "== == == Author matched SciNameAuth == == =="
 
           score = score + 1
           matched_on.append("PBDB:author == dwc:scientificNameAuthorship")
@@ -83,7 +82,6 @@ def matchPubFields(pbdb, idigbio):
         # Check for People      
 
         if specimen['data']['dwc:identificationRemarks'].lower().find( pb['ref']['author1'].lower() ) >= 0:
-          print "== == == Author matched Ident Remarks == == =="
  
           score = score + 1
           matched_on.append("PBDB:author == dwc:identificationRemarks")
@@ -92,19 +90,16 @@ def matchPubFields(pbdb, idigbio):
         # Check if author, article title, journal title exists in here ( genus species )
     
         if specimen['data']['dcterms:bibliographicCitation'].lower().find( pb['ref']['author1'].lower() ) >= 0:
-          print "== == == Author matched BibCit == == =="
 
           score = score + 1
           matched_on.append("PBDB:author == dcterms:bibliographicCitation")
 
         if specimen['data']['dcterms:bibliographicCitation'].lower().find( pb['ref']['title'].lower() ) >= 0:
-          print "== == == Title matched BibCit == == =="
 
           score = score + 1
           matched_on.append("PBDB:title == dcterms:bibliographicCitation")
 
         if specimen['data']['dcterms:bibliographicCitation'].lower().find( pb['ref']['pubtitle'].lower() ) >= 0:
-          print "== == == Pubtitle matched BibCit == == =="
 
           score = score + 1
           matched_on.append("PBDB:pubtitle == dcterms:bibliographicCitation")
@@ -113,20 +108,17 @@ def matchPubFields(pbdb, idigbio):
         # Author Name, Article, Pub title, volume, issue
 
         if specimen['data']['dwc:associatedReferences'].lower().find( pb['ref']['author1'].lower() ) >= 0:
-          print "== == == Author foudn in dwc:associatedReferences == == =="
 
           score = score + 1
           matched_on.append("PBDB:author == dwc:associatedReferences")
 
         # TODO Tweak to allow lev distance +/- 5
         if specimen['data']['dwc:associatedReferences'].lower().find( pb['ref']['title'].lower() ) >= 0:
-          print "== == == Article title found in Associated Refs == == =="
 
           score = score + 1
           matched_on.append("PBDB:title == dwc:associatedReferences")
 
         if specimen['data']['dwc:associatedReferences'].lower().find( pb['ref']['pubtitle'].lower() ) >= 0:
-          print "== == == Pub title found Assoc Refs == == =="
 
           score = score + 1
           matched_on.append("PBDB:pubtitle == dwc:associatedReferences")
@@ -136,28 +128,24 @@ def matchPubFields(pbdb, idigbio):
 
         for locality in pb['localities']:
           if specimen['data']['dwc:occurrenceRemarks'].lower().find( locality.lower() ) >= 0:
-            print "== == == PB Locality found in OccRem == == =="
 
             score = score + 1
             matched_on.append("PBDB:locality == dwc:occurrenceRemarks")
 
         for state in pb['ref']['states']:
           if specimen['data']['dwc:occurrenceRemarks'].lower().find( state ) >= 0:
-            print "== == == PB State found in OccRem == == =="
 
             score = score + 1
             matched_on.append("PBDB:states == dwc:occurrenceRemarks") 
 
         for member in pb['member']:
           if specimen['data']['dwc:occurrenceRemarks'].lower().find( member ) >= 0:
-            print "== == == PB member foun in OccRem == == ==" 
           
             score = score + 1
             matched_on.append("PBDB:member == dwc:occurrenceRemarks")
 
         for form in pb['formation']:
           if specimen['data']['dwc:occurrenceRemarks'].lower().find( form ) >= 0:
-            print "== == == PB formation found in OccRem == == =="
  
             score = score + 1
             matched_on.append("PBDB:formation == dwc:occurrenceRemarks")
@@ -165,8 +153,7 @@ def matchPubFields(pbdb, idigbio):
       if "dwc:identificationReferences" in specimen['data']:
         # People,
 
-        if pb['ref']['author1'].lower() == specimen['data']['dwc:identificationReference'].lower():
-          print "== == == Author matched IdentRef == == =="
+        if pb['ref']['author1'].lower() == specimen['data']['dwc:identificationReferences'].lower():
 
           score = score + 1
           matched_on.append("PBDB:author == dwc:identificationReference")
@@ -175,7 +162,6 @@ def matchPubFields(pbdb, idigbio):
         # People.
 
         if pb['ref']['author1'].lower() == specimen['data']['dwc:recordedBy'].lower():
-          print "== == == Author Matched recordedBy == == =="
  
           score = score + 1
           matched_on.append("PBDB:author == dwc:recordedBy")
@@ -184,7 +170,6 @@ def matchPubFields(pbdb, idigbio):
         # People
 
         if specimen['data']['dwc:identifiedBy'].lower().find( pb['ref']['author1'].lower() ) >= 0:
-          print "== == == Author matched identBy == == =="
 
           score = score + 1
           matched_on.append("PBDB:author == dwc:identifiedBy")
@@ -192,7 +177,6 @@ def matchPubFields(pbdb, idigbio):
       if "dwc:formation" in specimen['data']:
       
         if pb['ref']['title'].lower().find( specimen['data']['dwc:formation'].lower() ) >= 0:
-          print "== == == Formation found in Title == == =="
 
           score = score + 1
           matched_on.append("PBDB:title == dwc:formation")
