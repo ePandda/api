@@ -202,10 +202,9 @@ def publication():
     resp = (("status", "ok"),
             ("query_term", scientific_name),
             ("taxon_authority", taxon_auth),
-            ("matches", matches))
-            # TOOO MUCH DATA -- THESE KILL SERVER AND SEND 500
-            #("pbdb_matches", pbdb_items), 
-            #("idigbio_matches", idigbio_json['items']))
+            ("matches", matches),
+            ("pbdb_matches", pbdb_items), 
+            ("idigbio_matches", idigbio_json['items']))
 
     resp = collections.OrderedDict(resp)
     return Response(response=json.dumps(resp), status=200, mimetype="application/json")
@@ -246,19 +245,18 @@ def fossilModern():
 def stratigraphy():
 
   # required
-  strat_layer = request.args.get('strat_layer')
   taxon_name  = request.args.get('taxon_name')
-  #strat_auth  = request.args.get('strat_auth')
+  formation   = request.args.get('formation')
 
   # optional
   state_prov = request.args.get('state_province')
   county     = request.args.get('county')
   locality   = request.args.get('locality')
 
-  #if strat_layer and strat_auth:
-  if strat_layer and taxon_name:
+  if formation and taxon_name:
 
-    strat_param = '"earliestperiodorlowestsystem":"' + strat_layer + '","latestperiodorhighestsystem":"' + strat_layer + '"'        
+    #strat_param = '"earliestperiodorlowestsystem":"' + strat_layer + '","latestperiodorhighestsystem":"' + strat_layer + '"'        
+    formation_param = '"formation":"' + formation + '"'
     taxon_param = ', "scientificname": "' + taxon_name + '"'
 
     stateprov = ""
@@ -275,7 +273,7 @@ def stratigraphy():
     print "we looked for: " + taxon_name
 
     idigbio_items = []
-    idigbio = requests.get(config['idigbio_base'] + '{' + strat_param + taxon_param + stateprov + '}&limit=250')
+    idigbio = requests.get(config['idigbio_base'] + '{' + formation_param + taxon_param + stateprov + '}&limit=250')
     if 200 == idigbio.status_code:
         idigbio_json = json.loads(idigbio.content)
 
@@ -283,17 +281,22 @@ def stratigraphy():
           idigbio_items = idigbio_json['items']
 
     pb_results = []
-    pb_results = taxon_lookup.lookupByStratLayer( taxon_name, state_prov, strat_layer )
+    pb_results = taxon_lookup.lookupByFormation( taxon_name, state_prov, formation )
 
     matches = []
     if idigbio_items and pb_results:
       # Send of to be matched
       matches = stratmatching.match(idigbio_items, pb_results) 
 
+    pbdb_return = []
+    for pb in pb_results:
+      if pb['strat_colls']:
+        pbdb_return.append({"ref_id": pb['taxon_item']['ref_no'], "strat_data": pb['strat_colls']})
+
     resp = (("status", "ok"),
-            ("query_term", strat_layer),
+            ("query_term", formation),
             ("matches", matches),
-            ("pbdb_matches", pb_results),
+            ("pbdb_matches", pbdb_return),
             ("idigbio_matches", idigbio_items))
    
     resp = collections.OrderedDict(resp)
@@ -302,7 +305,7 @@ def stratigraphy():
   else:
 
     resp = (("status", "err"),
-            ("msg", "Stratigraphic Layer and Stratigraphic Authority are required fields"))
+            ("msg", "Formation and Taxon Name are required fields"))
 
     resp = collections.OrderedDict(resp)
     return Response(response=json.dumps(resp), status=422, mimetype="application/json")

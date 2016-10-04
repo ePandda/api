@@ -54,13 +54,18 @@ def lookupBySciName(sciname, state_prov):
 
   return inflated
 
-def lookupByStratLayer( sciname, state_prov, strat_layer ):
+def lookupByFormation( sciname, state_prov, formation ):
   print "in lookupByStratLayer"
-  print "Searching for a " + str(sciname) + " in " + str(state_prov) + " from the " + str(strat_layer)
+  print "Searching for a " + str(sciname) + " in " + str(state_prov) + " from the " + str(formation)
   
   inflated = []
-  sciname_lookup = db.pbdb_taxon_lookup.find({'$and': [{'classification_path': { '$regex': sciname, '$options': 'i'}},
-                                                       {'states': { '$regex': state_prov, '$options': 'i'}}]})
+  if state_prov:
+    state_prov = state_prov.lower()
+    sciname_lookup = db.pbdb_taxon_lookup.find({'$and': [{'classification_path': { '$regex': sciname, '$options': 'i'}},
+                                                         {'states': { '$regex': state_prov, '$options': 'i'}}]})
+
+  else:
+    sciname_lookup = db.pbdb_taxon_lookup.find({'classification_path': { '$regex': sciname, '$options': 'i'}})
 
   lookup_count = sciname_lookup.count()
 
@@ -69,35 +74,63 @@ def lookupByStratLayer( sciname, state_prov, strat_layer ):
   print "taxon_lookup finished"
   for item in sciname_lookup:
 
+    if "states" not in item:
+      item['states'] = []
+
     strat_colls = []
     for coll_no in item['coll_no']:
       coll_by_taxon = db.pbdb_colls.find({"$and": [
         {"collection_no": coll_no},
-        {"$or": [
-          {"period_max": {"$regex": strat_layer, "$options":'i'}},
-          {"period_min": {"$regex": strat_layer, "$options":'i'}}
-        ]}
+        {"formation": formation}
       ]})
 
       for coll in coll_by_taxon:
-        strat_colls.append({
-          "paleolng": coll['paleolng'],
-          "period_min": coll['period_min'],
-          "paleolat": coll['paleolat'],
-          "collectors": coll['collectors'],
-          "collection_aka": coll['collection_aka'],
-          "collection_no": coll['collection_no'],
-          "country": coll['country'],
-          "reference_no": coll['reference_no'],
-          "county": coll['county'],
-          "state": coll['state'],
-          "memeber": coll['member'],
-          "formation": coll['formation'],
-          "collection_name": coll['collection_name'],
-          "lat": coll['lat'],
-          "lng": coll['lng'],
-          "period_max": coll['period_max']
-        })
+
+        print item['ref_no'] + "coll object"
+        print coll
+
+        if state_prov is not None:
+          if coll['state'].lower() == state_prov:
+
+            strat_colls.append({
+              "paleolng": coll['paleolng'],
+              "period_min": coll['period_min'],
+              "paleolat": coll['paleolat'],
+              "collectors": coll['collectors'],
+              "collection_aka": coll['collection_aka'],
+              "collection_no": coll['collection_no'],
+              "country": coll['country'],
+              "reference_no": coll['reference_no'],
+              "county": coll['county'],
+              "state": coll['state'],
+              "memeber": coll['member'],
+              "formation": coll['formation'],
+              "collection_name": coll['collection_name'],
+              "lat": coll['lat'],
+              "lng": coll['lng'],
+              "period_max": coll['period_max']
+            })
+
+        else:
+
+          strat_colls.append({
+            "paleolng": coll['paleolng'],
+            "period_min": coll['period_min'],
+            "paleolat": coll['paleolat'],
+            "collectors": coll['collectors'],
+            "collection_aka": coll['collection_aka'],
+            "collection_no": coll['collection_no'],
+            "country": coll['country'],
+            "reference_no": coll['reference_no'],
+            "county": coll['county'],
+            "state": coll['state'],
+            "memeber": coll['member'],
+            "formation": coll['formation'],
+            "collection_name": coll['collection_name'],
+            "lat": coll['lat'],
+            "lng": coll['lng'],
+            "period_max": coll['period_max']
+          })
 
     inflated.append({"strat_colls": strat_colls, 
                        "taxon_item": {

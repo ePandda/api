@@ -31,61 +31,60 @@ def match(idigbio, pbdb):
 
       score = 0
       matched_on = []
-      #pb['genus_names'] = []
-      #pb['species_names'] = []
-
-      # flatten out occurrences
-      #if 'occurrences' in pb:
-      #  for occ in pb['occurrences']:
       
-      #    if occ['genus'].lower() not in pb['taxon_item']['genus_names'] and occ['genus'] is not "":
-      #      pb['genus_names'].append( occ['genus'].lower() )
-
-      #    if occ['species'].lower() not in pb['taxon_item']['genus_names'] and occ['species'] is not "":
-      #      pb['species_names'].append( occ['species'].lower() )
-
       print "checking if strat colls"
 
-      if 'strat_colls' in pb['taxon_item']:
-        for sc in pb['taxon_item']['strat_colls']:
+      for sc in pb['strat_colls']:
 
-          print "Process Strat Coll Info here ..... "
-          print " -- --- --- \n"
-          print sc
-          print " -- --- ---- -- ---- --- ---"
+        if 'member' not in sc:
+          sc['member'] = ''
 
-      #if "dwc:formation" in specimen['data']:
+        print "Process Strat Coll Info here ..... "
+        print " -- --- --- \n"
+        print sc
+        print " -- --- ---- -- ---- --- ---"
 
-      #  if specimen['data']['dwc:formation'].lower().find( pb['taxon_item']['formation'].lower() ) >= 0:
-      #     score = score + 1
-      #     matched_on.append("PBDB:formation == dwc:formation")
+        if "dwc:formation" in specimen['data']:
+          if specimen['data']['dwc:formation'].lower().find( sc['formation'].lower() ) >= 0:
+            if "PBDB:formation == dwc:formation" not in matched_on:
+              score = score + 1
+              matched_on.append("PBDB:formation == dwc:formation")
+         
+        if "dwc:member" in specimen['data']:
+          if specimen['data']['dwc:member'].lower().find( sc['member'].lower() ) >= 0:
+            if "PBDB:member == dwc:member" not in matched_on:
+              score = score + 1
+              matched_on.append("PBDB:member == dwc:member")
 
-      print "done formation"
+        if "dwc:county" in specimen['data']:
+          if specimen['data']['dwc:county'].lower().find( sc['county'].lower() ) >= 0:
+            if "PBDB:county == dwc:county" not in matched_on:
+              score = score + 1
+              matched_on.append("PBDB:county == dwc:county")
 
-      #if "dwc:country" in specimen['data']:
- 
-      #  print "IDB country: " + specimen['data']['dwc:country']
-      #  print "pbdb country: " + pb['country']
+        if "dwc:stateProvince" in specimen['data']:
+          if specimen['data']['dwc:stateProvince'].lower().find( sc['state'].lower() ) >= 0:
+            if "PBDB:state/province == dwc:stateProvince" not in matched_on:
+              score = score + 1
+              matched_on.append("PBDB:state/province == dwc:stateProvince")
 
-      #  if specimen['data']['dwc:country'].lower().find( pb['country'].lower() ) >= 0:
-      #    score = score + 1
-      #    matched_on.append("PBDB:country == dwc:country")      
+        if "dwc:locality" in specimen['data']:
+          if specimen['data']['dwc:locality'].lower().find( sc['collection_name'].lower() ) >= 0:
+            if "PBDB:collection_name == dwc:locality" not in matched_on:
+              score = score + 1
+              matched_on.append("PBDB:collection_name == dwc:locality")
 
-      print "done country"
-
-      #if "dwc:stateProvince" in specimen['data']:
-      #  if specimen['data']['dwc:stateProvince'].lower().find( pb['state'].lower() ) >= 0:
-      #    score = score + 1
-      #    matched_on.append("PBDB:state == dwc:stateProvince")
-
+          if specimen['data']['dwc:locality'].lower().find( sc['collection_aka'].lower() ) >= 0:
+            if "PBDB:collection_aka == dwc:locality" not in matched_on:
+              score = score + 1
+              matched_on.append("PBDB:collection_aka == dwc:locality")
+      
       if "dwc:scientificName" in specimen['data']:
         for gn in pb['taxon_item']['genus']:
 
           if specimen['data']['dwc:scientificName'].lower().find( gn.lower() ) >= 0:
             score = score + 1
             matched_on.append("PBDB:genus_name == dwc:scientificName")
-
-      print "done sci name"
 
       if "dwc:Identification" in specimen['data']:
         for ident in specimen['data']['dwc:Identification']:
@@ -104,9 +103,14 @@ def match(idigbio, pbdb):
       
       print "done Ident"
 
-      print "Score: " + str(score)
       if score > 1:
-        matches.append({"pbdb_id": pb['taxon_item']['coll_no'], "idig_id": specimen['uuid'], "score": score, "matched_on": '[%s]' % ', '.join(map(str, matched_on)) })
+        matches.append({
+          "pbdb_coll_id": map('https://paleobiodb.org/data1.2/colls/single.json?show=loc,stratext&id={0}'.format, pb['taxon_item']['coll_no']),
+          "pbdb_occ_id": map('https://paleobiodb.org/data1.2/occs/single.json?show=loc&id={0}'.format, pb['taxon_item']['occ_no']),
+          "pbdb_ref_id": 'https://paleobiodb.org/data1.2/refs/single.json?show=both&id=' + pb['taxon_item']['ref_no'],
+          "idig_id": 'http://search.idigbio.org/v2/view/records/' + specimen['uuid'],
+          "score": score,
+          "matched_on": '[%s]' % ',\n'.join(map(str, matched_on)) })
 
   print str(len(matches)) + " matches returned"
   # Sort matches by descending score  
