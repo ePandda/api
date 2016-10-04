@@ -29,7 +29,7 @@ def lookupBySciName(sciname, state_prov):
     # inflate collections
     ref_colls = []
     for cn in tm['coll_no']:
-      pb_colls = db.pbdb_colls.find({'collection_no': cn }, {'_id': 0})
+      pb_colls = db.pbdb_colls.find({ '$and': [{'collection_no': cn }, {'state': { '$regex': state_prov, '$options': 'i'}}]}, {'_id': 0})
       for pc in pb_colls:
         ref_colls.append(pc)
 
@@ -89,29 +89,29 @@ def lookupByFormation( sciname, state_prov, formation ):
 
 def lookupByRefNo(ref_no):
 
-  refno_lookup = db.pbdb_taxon_lookup.find({"ref_no": ref_no})
+  refno_lookup = db.pbdb_taxon_lookup.find({"ref_no": ref_no}, {'_id': 0})
   return refno_lookup
 
 
 def lookupByCollNo(coll_no):
 
-  collno_lookup = db.pbdb_taxon_lookup.find({"coll_no": { '$eq': coll_no}})
+  collno_lookup = db.pbdb_taxon_lookup.find({"coll_no": { '$eq': coll_no}}, {'_id': 0})
   return collno_lookup
 
 
 def lookupByOccNo(occ_no):
 
-  occno_lookup = db.pbdb_taxon_lookup.find({"occ_no": { '$eq': occ_no}})
+  occno_lookup = db.pbdb_taxon_lookup.find({"occ_no": { '$eq': occ_no}}, {'_id': 0})
   return occno_lookup
 
 
 def lookupByGenus(genus_name):
 
-  genus_lookup = db.pbdb_taxon_lookup.find({"genus": { '$eq': genus_name}})
+  genus_lookup = db.pbdb_taxon_lookup.find({"genus": { '$eq': genus_name}}, {'_id': 0})
   return genus_lookup
 
 
 def lookupBySpecies(species_name):
 
-  species_lookup = db.pbdb_taxon_lookup.find({"species": { '$eq': species_name}})
+  species_lookup = db.pbdb_taxon_lookup.find({"species": { '$eq': species_name}}, {'_id': 0})
   return species_lookup

@@ -198,6 +198,10 @@ def publication():
     print "gutcheck matches .. "
     print "match count: " + str(len(matches))
 
+    for pb in pbdb_items:
+      del pb['classification_path']
+      del pb['ref']['classification_path']
+
     # TODO: Shrink return object, or figure out how to send massive amount of data back?
     resp = (("status", "ok"),
             ("query_term", scientific_name),
