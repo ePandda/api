@@ -13,11 +13,11 @@ db = client.test
 def lookupBySciName(sciname, state_prov):
 
   print "in lookup BySciName"
-  print "searching for " + sciname + "located in " + state_prov
+  print "searching for " + str(sciname) + "located in " + str(state_prov)
 
   inflated = []
-  sciname_lookup = db.pbdb_taxon_lookup.find({'$and': [{'classification_path': { '$regex': sciname, '$options': 'i'}},
-                                                       {'states': { '$regex': state_prov, '$options': 'i'}}]}, {'_id': 0})
+  sciname_lookup = db.pbdb_taxon_lookup.find({'$and': [{'classification_path': { '$regex': str(sciname), '$options': 'i'}},
+                                                       {'states': { '$regex': str(state_prov), '$options': 'i'}}]}, {'_id': 0})
   for tm in sciname_lookup:
 
     # inflate references

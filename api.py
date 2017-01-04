@@ -48,6 +48,10 @@ def occurrence():
   locality         = request.args.get('locality')
   period           = request.args.get('period')
   institution_code = request.args.get('institution_code')
+  limit            = request.args.get('limit')
+
+  if limit is None:
+    limit = '250'
 
   if taxon_name and taxon_auth:
 
@@ -65,6 +69,8 @@ def occurrence():
     print "genus: " + genus_param
     print "species: " + species_param
 
+    print "limit: " + limit
+
     # Required params met, check what optional terms we have
     loc = ""
     if locality is not None and len(locality) > 0:
@@ -79,10 +85,10 @@ def occurrence():
       inst_param = ', "institution_code": "' + str(institution_code) + '"'
 
     print "Sci Name: " + taxon_name
-    print "URL: " + config['idigbio_base'] + '{' + sciname_param + loc + period_param + inst_param + '}&limit=250'
+    print "URL: " + config['idigbio_base'] + '{' + sciname_param + loc + period_param + inst_param + '}&limit=' + limit
 
     # Get iDigBio Records
-    idigbio = requests.get(config['idigbio_base'] + '{' + sciname_param + '}&limit=250')
+    idigbio = requests.get(config['idigbio_base'] + '{' + sciname_param + '}&limit=' + limit)
     if 200 == idigbio.status_code:
       idigbio_json = json.loads( idigbio.content )
 
@@ -129,7 +135,7 @@ def occurrence():
 
     matches = occ_matching.occurrenceMatch(matches_on_occ, idigbio_json['items'])
 
-    resp = (("status", "okay"),
+    resp = (("status", "ok"),
             ("matches", matches),
             ("pbdb_occ", matches_on_occ),
             ("idigbio_occ", idigbio_json['items']))
@@ -167,6 +173,10 @@ def publication():
   state_prov = request.args.get('state_province')
   county     = request.args.get('county')
   locality   = request.args.get('locality')
+  limit      = request.args.get('limit')
+
+  if limit is None:
+    limit = '250'
 
   # if scientific_name and taxon_auth:
   if scientific_name or order or kingdom or phylum:
@@ -203,10 +213,10 @@ def publication():
     # assume genus species if scientific_name has a space, otherwise it's higher up the tree? 
 
     print "Sci Name: " + scientific_name
-    print "URL: " + config['idigbio_base'] + '{' + sciname_param + stateprov + countyparam + '}&limit=250'
+    print "URL: " + config['idigbio_base'] + '{' + sciname_param + stateprov + countyparam + '}&limit=' + limit
 
     # Get iDigBio Records
-    idigbio = requests.get(config['idigbio_base'] + '{' + sciname_param + stateprov + countyparam + '}&limit=250')
+    idigbio = requests.get(config['idigbio_base'] + '{' + sciname_param + stateprov + countyparam + '}&limit=' + limit)
     if 200 == idigbio.status_code:
       idigbio_json = json.loads( idigbio.content )
 
@@ -238,6 +248,7 @@ def publication():
     resp = collections.OrderedDict(resp)
     return Response(response=json.dumps(resp), status=422, mimetype="application/json")
 
+# TODO: FINISH ME!!!
 @app.route("/api/v1/fossilmodern", methods=['GET'])
 def fossilModern():
   # required
@@ -247,6 +258,10 @@ def fossilModern():
   # optional
   locality = request.args.get('locality')
   period   = request.args.get('period')
+  limit    = request.args.get('limit')
+ 
+  if limit is None:
+    limit = '250'
 
   if scientific_name and taxon_auth:
 
@@ -274,6 +289,10 @@ def stratigraphy():
   state_prov = request.args.get('state_province')
   county     = request.args.get('county')
   locality   = request.args.get('locality')
+  limit      = request.args.get('limit')
+
+  if limit is None:
+    limit = '250'
 
   if formation and taxon_name:
 

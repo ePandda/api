@@ -66,6 +66,12 @@ def occurrenceMatch(pbdb, idigbio):
             score = score + 1
 		
 		# match on period
+        # TODO -- Tidy this up
+        pbdb_period = None
+        pbdb_period_list = None
+        idb_period = None
+        idb_period_list = None
+
         if cd['period_min'] and cd['period_max']:
 		  if cd['period_min'].lower() == cd['period_max'].lower():
 		    pbdb_period = cd['period_max'].lower()
